@@ -12,9 +12,4 @@ export const sidebar_items = [
     path: "/tags",
     component: Books
   },
-  {
-    name: "Users",
-    path: "/books",
-    component: Books
-  }
 ]
