@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, Column, Relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint
 import uuid
 import sqlalchemy.dialects.postgresql as pg
 from datetime import datetime, date
@@ -11,12 +11,27 @@ class BookTag(SQLModel, table=True):
 
     book_uid: uuid.UUID = Field(
         sa_column=Column(
-            pg.UUID, ForeignKey("books.uid"), primary_key=True, nullable=False
+            pg.UUID, ForeignKey("books.uid", ondelete="CASCADE"), primary_key=True, nullable=False
         )
     )
     tag_uid: uuid.UUID = Field(
         sa_column=Column(
-            pg.UUID, ForeignKey("tags.uid"), primary_key=True, nullable=False
+            pg.UUID, ForeignKey("tags.uid", ondelete="CASCADE"), primary_key=True, nullable=False
+        )
+    )
+
+
+class ReviewLike(SQLModel, table=True):
+    __tablename__ = "review_likes"
+    
+    review_uid: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID, ForeignKey("reviews.uid", ondelete="CASCADE"), primary_key=True, nullable=False
+        )
+    )
+    user_uid: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, nullable=False
         )
     )
 
@@ -70,6 +85,11 @@ class User(SQLModel, table=True):
     reviews: List["Review"] = Relationship(
         back_populates="user", sa_relationship_kwargs={"lazy": "selectin"}
     )
+    liked_reviews: List["Review"] = Relationship(
+        back_populates="liked_by",
+        link_model=ReviewLike,
+        sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -112,6 +132,9 @@ class Book(SQLModel, table=True):
 
 class Review(SQLModel, table=True):
     __tablename__ = "reviews"
+    __table_args__ = (
+        UniqueConstraint("user_uid", "book_uid", name="unique_user_book_review"),
+    )
 
     uid: uuid.UUID = Field(
         sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid.uuid4)
@@ -119,11 +142,26 @@ class Review(SQLModel, table=True):
     rating: int = Field(lt=6)  # lt => less than
     review_text: str
     user_uid: Optional[uuid.UUID] = Field(default=None, foreign_key="users.uid")
-    book_uid: Optional[uuid.UUID] = Field(default=None, foreign_key="books.uid")
+    book_uid: Optional[uuid.UUID] = Field(
+        sa_column=Column(
+            pg.UUID,
+            ForeignKey("books.uid", ondelete="CASCADE"),
+            nullable=True, #CASCADE to delete reviews when the book is deleted
+        )
+    )
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
     updated_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
-    user: Optional[User] = Relationship(back_populates="reviews")
-    book: Optional[Book] = Relationship(back_populates="reviews")
+    user: Optional[User] = Relationship(
+        back_populates="reviews", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    book: Optional[Book] = Relationship(
+        back_populates="reviews", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    liked_by: List[User] = Relationship(
+        back_populates="liked_reviews",
+        link_model=ReviewLike,
+        sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     def __repr__(self):
         return f"<Review for book {self.book_uid} by user {self.user_uid}>"

@@ -16,6 +16,7 @@ export const bookService = {
 
   get_book_by_id: async (book_uid: string): Promise<BookDetail> => {
     const { data } = await api.get<BookDetail>(`/books/${book_uid}`)
+    console.log(data);
     return data
   },
 

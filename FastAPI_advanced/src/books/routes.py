@@ -2,12 +2,15 @@ from fastapi import APIRouter, status, Depends
 from fastapi.exceptions import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from typing import List
-
+from src.db.models import ReviewLike
+from sqlalchemy import select as sa_select
 from src.books.service import BookService
-from .schemas import Book, BookUpdateModel, BookCreateModel, BookDetailModel
+from .schemas import Book, BookUpdateModel, BookCreateModel, BookDetailModel, ReviewDetailModel
 from src.auth.dependencies import AccessTokenBearer, RoleChecker
 from src.db.main import get_session
 from src.errors import BookNotFound
+from collections import defaultdict
+import uuid
 
 book_router = APIRouter()
 book_service = BookService()
@@ -61,11 +64,31 @@ async def get_book(
 ) -> dict:
     book = await book_service.get_book(book_uid, session)
 
-    if book:
-        return book
-    else:
+    if not book:
         raise BookNotFound()
 
+    current_user_uid = token_details["user"]["user_uid"]
+    review_uids = [uuid.UUID(str(r.uid)) for r in book.reviews]
+
+
+    stmt = sa_select(ReviewLike).where(ReviewLike.review_uid.in_(review_uids))
+    result = await session.exec(stmt)
+    likes = result.scalars().all()
+    
+    likes_by_review = defaultdict(list)
+    for like in likes:
+        likes_by_review[str(like.review_uid)].append(str(like.user_uid))
+        
+    reviews = [
+        ReviewDetailModel(
+            **review.model_dump(),
+            user=review.user,
+            likes_count=len(likes_by_review[str(review.uid)]),
+            is_liked=current_user_uid in likes_by_review[str(review.uid)]
+        ) for review in book.reviews
+    ]
+    
+    return {**book.model_dump(), "reviews": reviews, "tags": book.tags}
 
 @book_router.patch("/{book_uid}", response_model=Book, dependencies=[admin_checker])
 async def update_book(

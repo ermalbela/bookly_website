@@ -108,19 +108,53 @@
               :key="review.uid"
               class="p-5 bg-gray-50 rounded-xl border border-gray-100"
             >
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex gap-0.5">
-                  <span
-                    v-for="i in 5"
-                    :key="i"
-                    class="text-base"
-                    :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-200'"
-                    >★</span
-                  >
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="flex flex-col">
+                    <span class="text-xs text-gray-400 mb-4">{{ review.user?.username ?? 'deleted_user' }}</span>
+                  </div>
+                  <div class="flex gap-0.5">
+                    <span
+                      v-for="i in 5"
+                      :key="i"
+                      class="text-base"
+                      :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-200'"
+                      >
+                      ★
+                    </span>
+                  </div>
                 </div>
-                <span class="text-xs text-gray-400">{{ formatDate(review.created_at) }}</span>
+                <div class="flex flex-col">
+                  <button 
+                    v-if="canDeleteReview(review)" 
+                    class="text-red-500 cursor-pointer active:text-red-900 w-fit self-end mb-4"
+                    @click="deleteReview(review.uid)"
+                    >
+                    <i class="pi pi-times-circle"></i>
+                  </button>
+                  <span class="text-xs text-gray-400 h-full text-start">{{ formatDate(review.created_at) }}</span>
+                </div>
               </div>
-              <p class="text-sm text-gray-700 leading-relaxed">{{ review.review_text }}</p>
+              <div class="flex justify-between">
+                <p class="text-sm text-gray-700 leading-relaxed">{{ review.review_text }}</p>
+                <div class="flex flex-column">
+                  <span class="text-sm mr-3 text-gray-600">{{ review.likes_count }}</span>
+                  <button 
+                      v-if="review.is_liked"
+                      class="text-red-500 cursor-pointer active:text-red-900 w-fit self-end mb-4"
+                      @click="unlikeReview(review.uid)"
+                      >
+                      <i class="pi pi-heart-fill"></i>
+                  </button>
+                  <button 
+                      v-else
+                      class="text-red-500 cursor-pointer active:text-red-900 w-fit self-end mb-4"
+                      @click="likeReview(review.uid)"
+                      >
+                      <i class="pi pi-heart"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -186,7 +220,10 @@ import { reviewService } from '@/services/review_service'
 import CommonModal from '@/components/modals/CommonModal.vue'
 import { tagService } from '@/services/tag_service'
 import { useToastNotifications } from '@/_helper/useToastNotifications'
+import type { Review } from '@/types/review_types'
+import { useAuthStore } from '@/stores/auth_store'
 
+const authStore = useAuthStore();
 const toastNotifications = useToastNotifications();
 const route = useRoute()
 const book = ref<BookDetail | null>(null)
@@ -211,6 +248,10 @@ onMounted(async () => {
   }
 })
 
+const refetchBook = async () => {
+  book.value = await bookService.get_book_by_id(route.params.id as string)
+}
+
 const avgRating = computed(() => {
   if (!book.value?.reviews.length) return 0
   const sum = book.value.reviews.reduce((acc, r) => acc + r.rating, 0)
@@ -227,40 +268,75 @@ const details = computed(() => {
   ]
 })
 
-const submitReview = async (rating: number, review_text: string) => {
-  try {
-    if (!book.value) return
+const canDeleteReview = (review: Review): boolean => {
+  if(!authStore.user) return false;
+  return authStore.user.role === 'admin' || review.user_uid === authStore.user.uid
+}
 
-    const response = await reviewService.create_review(rating, review_text, book.value?.uid)
-    book.value = await bookService.get_book_by_id(route.params.id as string)
+const submitReview = async (rating: number, review_text: string) => {
+  if (!book.value) return
+  
+  try {
+    await reviewService.create_review(rating, review_text, book.value?.uid)
+    await refetchBook();
     toastNotifications.addToastNotifications('Review submitted successfully!', 'green')
     rateModal.value?.close()
   } catch (e: any) {
-    console.log(e.response)
-    toastNotifications.addToastNotifications(e.response?.data?.message ?? 'Something went wrong.', 'red')
+    console.log(e.response.data.detail)
+    toastNotifications.addToastNotifications(e.response.data?.detail ?? 'Something went wrong.', 'red')
+  }
+}
+
+const likeReview = async (review_uid: string) => {
+  if(!authStore.user?.uid || !review_uid) return;
+
+  try{
+    await reviewService.like_review(review_uid, authStore.user?.uid);
+    refetchBook();
+  } catch(e: any){
+    toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red', 5000)
+  }
+}
+
+const unlikeReview = async (review_uid: string) => {
+  if(!authStore.user?.uid || !review_uid) return;
+
+  try{
+    await reviewService.unlike_review(review_uid, authStore.user?.uid);
+    refetchBook();
+  } catch(e: any){
+    toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red', 5000)
+  }
+}
+
+const deleteReview = async (review_uid: string) => {
+  if(!review_uid) return;
+  
+  try{
+    await reviewService.delete_review(review_uid);
+    await refetchBook();
+    toastNotifications.addToastNotifications('Review deleted successfully.', 'green');
+  } catch(e: any){
+    toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red', 5000);
   }
 }
 
 const addTag = async (book_uid?: string, tag_uid?: string) => {
-  console.log(book_uid, tag_uid)
   if (!book_uid || !tag_uid || !tagQuery.value) {
     toastNotifications.addToastNotifications('Please add a tag.', 'red')
     return
   }
 
   try {
-    const response = await tagService.add_tag_to_book(book_uid, tag_uid)
-    console.log(response)
+    await tagService.add_tag_to_book(book_uid, tag_uid)
 
     tagIsOpen.value = false
     tagValue.value = null
     tagQuery.value = '';
-    book.value = await bookService.get_book_by_id(route.params.id as string)
+    await refetchBook();
     toastNotifications.addToastNotifications('Tag added successfully!', 'green')
   } catch (e: any) {
-    console.log(e.response)
-    toastNotifications.addToastNotifications(e.response?.data?.message ?? 'Something went wrong.', 'red')
-    return
+    toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red')
   }
 }
 
@@ -285,9 +361,11 @@ const handleRemoveTagFromBook = async (book_uid: string, tag_uid: string) => {
 
   try {
     await tagService.remove_tag_from_book(book_uid, tag_uid)
-    book.value = await bookService.get_book_by_id(route.params.id as string)
+    toastNotifications.addToastNotifications('Tag removed successfully', 'green')
+    await refetchBook();
   } catch (e: any) {
     console.log(e.response.data)
+    toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red', 5000)
   }
 }
 

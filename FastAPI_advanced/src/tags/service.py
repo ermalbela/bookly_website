@@ -88,6 +88,7 @@ class TagService:
         await session.refresh(book)
         return link
 
+
     async def remove_tag_from_book(
         self, book_uid: str, tag_uid: str, session: AsyncSession
     ):
