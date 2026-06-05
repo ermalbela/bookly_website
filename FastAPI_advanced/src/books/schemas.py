@@ -19,6 +19,11 @@ class Book(BaseModel):
 class BookDetailModel(Book):
     reviews: List[ReviewDetailModel]
     tags: List[TagModel]
+    
+
+class BookSavesModel(Book):
+    is_saved: bool = None
+    saved_count: int = 0
 
 class BookCreateModel(BaseModel):
     title: str

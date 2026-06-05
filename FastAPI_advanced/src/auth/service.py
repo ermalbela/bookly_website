@@ -1,15 +1,25 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
-from src.db.models import User
+from src.db.models import User, Book, SavedBooks
 from .schemas import UserCreateModel
 from .utils import generate_password_hash
-from fastapi import UploadFile
-import hashlib
+from src.errors import UserNotFound, BookNotFound
+from fastapi import HTTPException, status
 
 
 class UserService:
     async def get_user_by_email(self, email: str, session: AsyncSession):
         statement = select(User).where(User.email == email)
+        
+        result = await session.exec(statement)
+        
+        user = result.first()
+        
+        return user
+    
+    
+    async def get_user_by_id(self, user_uid: str, session: AsyncSession):
+        statement = select(User).where(User.uid == user_uid)
         
         result = await session.exec(statement)
         
@@ -62,3 +72,51 @@ class UserService:
         await session.refresh(user)
         
         return user
+    
+    
+    async def save_book(self, user_uid: str, book_uid: str, session: AsyncSession):
+        user = await self.get_user_by_id(user_uid, session)
+        
+        if not user:
+            raise UserNotFound()
+        
+        book = await session.exec(select(Book).where(Book.uid == book_uid))
+        
+        if not book:
+            raise BookNotFound()
+        
+        existing_save = await session.exec(
+            select(SavedBooks).where(SavedBooks.user_uid == user_uid, SavedBooks.book_uid == book_uid))
+        
+        if existing_save.first():
+            raise HTTPException(
+                detail="User already saved this book!",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+        
+        saved_book = SavedBooks(book_uid=book_uid, user_uid=user_uid)
+        
+        session.add(saved_book)
+        await session.commit()
+        await session.refresh(user)
+        
+        return saved_book
+    
+    
+    async def unsave_book(self, user_uid: str, book_uid: str, session: AsyncSession):
+        saved_book = await session.exec(
+            select(SavedBooks).where(
+                SavedBooks.user_uid == user_uid, SavedBooks.book_uid == book_uid
+                )
+            )
+        
+        saved_book = saved_book.first()
+        
+        if not saved_book:
+            raise HTTPException(
+                detail="User didnt save this book yet!",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+            
+        await session.delete(saved_book)
+        await session.commit()

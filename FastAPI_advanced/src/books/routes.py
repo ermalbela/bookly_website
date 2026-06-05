@@ -2,10 +2,11 @@ from fastapi import APIRouter, status, Depends
 from fastapi.exceptions import HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from typing import List
-from src.db.models import ReviewLike
+from src.db.models import ReviewLike, SavedBooks
 from sqlalchemy import select as sa_select
+from sqlmodel import select
 from src.books.service import BookService
-from .schemas import Book, BookUpdateModel, BookCreateModel, BookDetailModel, ReviewDetailModel
+from .schemas import Book, BookUpdateModel, BookCreateModel, BookDetailModel, ReviewDetailModel, BookSavesModel
 from src.auth.dependencies import AccessTokenBearer, RoleChecker
 from src.db.main import get_session
 from src.errors import BookNotFound
@@ -19,13 +20,30 @@ role_checker = Depends(RoleChecker(["admin", "user"]))
 admin_checker = Depends(RoleChecker(["admin"]))
 
 
-@book_router.get("/", response_model=List[BookDetailModel], dependencies=[role_checker])
+@book_router.get("/", response_model=List[BookSavesModel], dependencies=[role_checker])
 async def get_all_books(
     session: AsyncSession = Depends(get_session),
     token_details: dict = Depends(access_token_bearer),
 ):
     books = await book_service.get_all_books(session)
-    return books
+    
+    user_uid = token_details.get("user")["user_uid"]
+    
+    statement = await session.exec(select(SavedBooks).where(SavedBooks.user_uid == user_uid))
+    all_saved_books = statement.all()
+    saved_by_user = {str(s.book_uid) for s in all_saved_books if str(s.user_uid) == user_uid}
+    
+    saved_count = defaultdict(int) #defaultdict adds a default key to dicts
+    for s in all_saved_books:
+        saved_count[str(s.book_uid)] += 1
+
+    return [
+        {
+            **book.model_dump(),
+            "is_saved": str(book.uid) in saved_by_user,
+            "saved_count": saved_count[str(book.uid)]
+        } for book in books
+    ]
 
 
 @book_router.get("/user/{user_uid}", response_model=List[Book], dependencies=[role_checker])
@@ -71,8 +89,8 @@ async def get_book(
     review_uids = [uuid.UUID(str(r.uid)) for r in book.reviews]
 
 
-    stmt = sa_select(ReviewLike).where(ReviewLike.review_uid.in_(review_uids))
-    result = await session.exec(stmt)
+    statement = sa_select(ReviewLike).where(ReviewLike.review_uid.in_(review_uids))
+    result = await session.exec(statement)
     likes = result.scalars().all()
     
     likes_by_review = defaultdict(list)

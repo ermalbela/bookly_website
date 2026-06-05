@@ -4,7 +4,7 @@ from src.books.routes import book_router
 from contextlib import asynccontextmanager
 import cloudinary
 from src.db.main import init_db
-from src.auth.routes import auth_router
+from src.auth.routes import auth_router, user_books_router
 from src.reviews.routes import review_router, user_review_router
 from src.tags.routes import tag_router, book_tag_router
 from .errors import register_all_errors
@@ -48,3 +48,4 @@ app.include_router(review_router, prefix=f"/api/{version}/review", tags=['review
 app.include_router(tag_router, prefix=f"/api/{version}/tag", tags=['tags'])
 app.include_router(book_tag_router, prefix=f"/api/{version}/book_tag", tags=['book_tags'])
 app.include_router(user_review_router, prefix=f"/api/{version}/user_review", tags=['user_reviews'])
+app.include_router(user_books_router, prefix=f"/api/{version}/user_book", tags=['user_books'])

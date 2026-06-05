@@ -78,7 +78,9 @@ FLOWER PORT     : http://localhost:5555/
 
 ==============================FRONTEND===========================
 
-INSTALL         : npm install
-RUN DEV         : npm run dev
-RUN TESTS       : npm run test:run
-DEV PORT        : http://localhost:5173/
+INSTALL                : npm install
+RUN DEV                : npm run dev
+RUN TESTS-FRONT        : npm run test:run
+RUN TESTS-BACK         : pytest
+RUN SCHEMATHESIS TESTS : schemathesis run http://localhost:8000/openapi.json / 
+DEV PORT               : http://localhost:5173/

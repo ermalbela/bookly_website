@@ -11,6 +11,8 @@ export interface Book {
   language: string,
   created_at: string,
   updated_at: string,
+  is_saved: string,
+  saved_count: number
 }
 
 export interface BookCreateModel {

@@ -42,6 +42,7 @@ from src.config import Config
 from src.celery_tasks import send_email
 
 auth_router = APIRouter()
+user_books_router = APIRouter()
 user_service = UserService()
 role_checker = RoleChecker(["admin", "user"])
 
@@ -286,3 +287,12 @@ async def upload_avatar(token_details: dict = Depends(AccessTokenBearer()), file
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     return {"avatar_url": avatar_url}
+
+
+@user_books_router.post("/user/{user_uid}/book/{book_uid}")
+async def save_book_by_user(user_uid: str, book_uid: str, session: AsyncSession = Depends(get_session)):
+    await user_service.save_book(user_uid, book_uid, session)
+    
+@user_books_router.delete("/user/{user_uid}/book/{book_uid}")
+async def unsave_book_by_user(user_uid: str, book_uid: str, session: AsyncSession = Depends(get_session)):
+    await user_service.unsave_book(user_uid, book_uid, session)

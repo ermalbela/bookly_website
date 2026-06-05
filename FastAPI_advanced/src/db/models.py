@@ -34,6 +34,21 @@ class ReviewLike(SQLModel, table=True):
             pg.UUID, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, nullable=False
         )
     )
+    
+
+class SavedBooks(SQLModel, table=True):
+    __tablename__ = "saved_books"
+    
+    book_uid: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID, ForeignKey("books.uid", ondelete="CASCADE"), primary_key=True, nullable=False
+        )
+    )
+    user_uid: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, nullable=False
+        )
+    )
 
 
 class Tag(SQLModel, table=True):
@@ -90,6 +105,11 @@ class User(SQLModel, table=True):
         link_model=ReviewLike,
         sa_relationship_kwargs={"lazy": "selectin"}
     )
+    saved_books: List["Book"] = Relationship(
+        back_populates="saved_by",
+        link_model=SavedBooks,
+        sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -124,6 +144,11 @@ class Book(SQLModel, table=True):
         back_populates="books",
         link_model=BookTag,
         sa_relationship_kwargs={"lazy": "selectin"},
+    )
+    saved_by: List[User] = Relationship(
+        back_populates="saved_books",
+        link_model=SavedBooks,
+        sa_relationship_kwargs={"lazy": "selectin"}
     )
 
     def __repr__(self):

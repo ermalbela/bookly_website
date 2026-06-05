@@ -278,7 +278,7 @@ const submitReview = async (rating: number, review_text: string) => {
   
   try {
     await reviewService.create_review(rating, review_text, book.value?.uid)
-    await refetchBook();
+    refetchBook();
     toastNotifications.addToastNotifications('Review submitted successfully!', 'green')
     rateModal.value?.close()
   } catch (e: any) {
@@ -314,7 +314,7 @@ const deleteReview = async (review_uid: string) => {
   
   try{
     await reviewService.delete_review(review_uid);
-    await refetchBook();
+    refetchBook();
     toastNotifications.addToastNotifications('Review deleted successfully.', 'green');
   } catch(e: any){
     toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red', 5000);
@@ -333,7 +333,7 @@ const addTag = async (book_uid?: string, tag_uid?: string) => {
     tagIsOpen.value = false
     tagValue.value = null
     tagQuery.value = '';
-    await refetchBook();
+    refetchBook();
     toastNotifications.addToastNotifications('Tag added successfully!', 'green')
   } catch (e: any) {
     toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red')
@@ -362,7 +362,7 @@ const handleRemoveTagFromBook = async (book_uid: string, tag_uid: string) => {
   try {
     await tagService.remove_tag_from_book(book_uid, tag_uid)
     toastNotifications.addToastNotifications('Tag removed successfully', 'green')
-    await refetchBook();
+    refetchBook();
   } catch (e: any) {
     console.log(e.response.data)
     toastNotifications.addToastNotifications(e.response?.data?.detail ?? 'Something went wrong.', 'red', 5000)

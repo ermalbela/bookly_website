@@ -4,7 +4,7 @@ import type { AuthResponse, AuthUser, User } from '@/types/user_types';
 
 
 export const authService = {
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string): Promise<AuthResponse> => {
     const { data } = await api.post<AuthResponse>('/auth/login', { email, password })
     console.log(data);
     return data
@@ -20,7 +20,7 @@ export const authService = {
     await api.get('/auth/logout');
   },
 
-  get_current_user: async () => {
+  get_current_user: async (): Promise<AuthUser> => {
     const { data } = await api.get<AuthUser>('/auth/me')
     return data
   },
@@ -45,6 +45,16 @@ export const authService = {
       new_password,
       confirm_new_password,
     })
+    return data
+  },
+
+  save_book: async (user_uid: string, book_uid: string): Promise<void> => {
+    const {data} = await api.post(`/user_book/user/${user_uid}/book/${book_uid}`)
+    return data
+  },
+
+  unsave_book: async (user_uid: string, book_uid: string): Promise<void> => {
+    const {data} = await api.delete(`/user_book/user/${user_uid}/book/${book_uid}`)
     return data
   },
 }

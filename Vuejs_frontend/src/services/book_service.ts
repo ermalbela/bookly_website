@@ -5,6 +5,7 @@ import api from './api'
 export const bookService = {
   get_all_books: async (): Promise<BookDetail[]> => {
     const { data } = await api.get<BookDetail[]>('/books/')
+    console.log(data)
     return data
   },
 
@@ -33,4 +34,5 @@ export const bookService = {
   delete_book: async (book_uid: string): Promise<void> => {
     await api.delete(`/books/${book_uid}`)
   },
+
 }
