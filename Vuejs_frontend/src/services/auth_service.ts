@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/auth_store';
 import api from './api';
-import type { AuthResponse, AuthUser, User } from '@/types/user_types';
+import type { AuthResponse, AuthUser, ProfileResponse, User } from '@/types/user_types';
 
 
 export const authService = {
@@ -48,6 +48,7 @@ export const authService = {
     return data
   },
 
+  
   save_book: async (user_uid: string, book_uid: string): Promise<void> => {
     const {data} = await api.post(`/user_book/user/${user_uid}/book/${book_uid}`)
     return data
@@ -57,4 +58,10 @@ export const authService = {
     const {data} = await api.delete(`/user_book/user/${user_uid}/book/${book_uid}`)
     return data
   },
+
+  get_profile: async (): Promise<ProfileResponse> => {
+    const {data} = await api.get<ProfileResponse>('/user_book/profile')
+    console.log(data);
+    return data;
+  }
 }

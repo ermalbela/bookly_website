@@ -5,6 +5,7 @@ import uuid
 
 class ReviewUser(BaseModel):
     username: str
+    avatar_url: str
 
     model_config = ConfigDict(from_attributes=True)
 

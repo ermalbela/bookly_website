@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import MainContent from '@/components/MainContent.vue'
+import MainContent from './MainContent.vue';
 
 </script>
 

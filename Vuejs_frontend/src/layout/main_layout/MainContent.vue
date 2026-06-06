@@ -14,8 +14,8 @@
 
 <script setup lang="ts">
 import {ref} from 'vue';
-import AppNavbar from '@/components/AppNavbar.vue'
-import AppSidebar from '@/components/AppSidebar.vue'
+import AppNavbar from './AppNavbar.vue';
+import AppSidebar from './AppSidebar.vue'
 import { useRoute } from 'vue-router';
 
 const route = useRoute();

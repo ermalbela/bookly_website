@@ -2,7 +2,7 @@
   <div class="py-12 px-12 bg-white rounded-sm shadow-sm">
     <div class="flex flex-col md:flex-col md:items-end md:justify-between mb-8">
       <div class="flex justify-between flex-row w-full">
-        <h1 class="text-3xl font-bold">Books</h1>
+        <h1 class="text-3xl font-bold">Book</h1>
         <RouterLink
           :to="{ name: 'books' }"
           class="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors"
@@ -21,22 +21,21 @@
     <div v-else-if="book" class="mx-auto space-y-6">
       <div class="border-gray-300 border rounded-sm border-l p-5 grid gap-4">
         <div class="flex w-full justify-between">
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-semibold text-gray-900">
+              Book Details
+            </h2>
+          </div>
           <button
             @click="tagIsOpen = true"
             class="px-4 py-3 bg-emerald-800 text-white text-sm font-medium rounded-md cursor-pointer active:bg-emerald-900"
           >
             Add Tag
           </button>
-          <button
-            @click="rateModal?.open()"
-            class="px-4 py-3 bg-emerald-800 text-white text-sm font-medium rounded-md cursor-pointer active:bg-emerald-900"
-          >
-            Add Review
-          </button>
         </div>
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div class="p-8">
-            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+        <div class="mb-8 border border-gray-300 p-7">
+          <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between p-8">
               <div class="flex-1">
                 <h1 class="text-3xl font-bold text-gray-900 leading-tight">{{ book.title }}</h1>
                 <p class="text-lg text-gray-500 mt-1">
@@ -59,105 +58,39 @@
                   <span v-if="book.tags.length === 0" class="text-xs text-gray-400">No tags</span>
                 </div>
               </div>
-
-              <div
-                class="flex flex-col items-center justify-center bg-gray-50 rounded-xl px-6 py-4 border border-gray-100 min-w-28"
-              >
-                <span class="text-3xl font-bold text-gray-900">{{ avgRating }}</span>
-                <div class="flex gap-0.5 mt-1">
-                  <span
-                    v-for="n in 5"
-                    :key="n"
-                    class="text-lg"
-                    :class="n <= Math.round(avgRating) ? 'text-yellow-400' : 'text-gray-200'"
-                    >★</span
-                  >
-                </div>
-                <span class="text-xs text-gray-400 mt-1"
-                  >{{ book.reviews.length }} review{{ book.reviews.length !== 1 ? 's' : '' }}</span
-                >
-              </div>
             </div>
           </div>
-        </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div
-            v-for="detail in details"
-            :key="detail.label"
-            class="bg-white rounded-xl shadow-sm p-5 border border-gray-50"
-          >
-            <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">
-              {{ detail.label }}
-            </p>
-            <p class="text-sm font-semibold text-gray-800 mt-1">{{ detail.value }}</p>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-8">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6">Reviews</h2>
-
-          <div v-if="book.reviews.length === 0" class="text-center py-10 text-gray-400">
-            <div class="text-4xl mb-3">💬</div>
-            <p class="text-sm">No reviews yet for this book.</p>
-          </div>
-
-          <div v-else class="space-y-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
             <div
-              v-for="review in book.reviews"
-              :key="review.uid"
-              class="p-5 bg-gray-50 rounded-xl border border-gray-100"
+              v-for="detail in details"
+              :key="detail.label"
+              class="bg-white rounded-xl shadow-sm p-5 border border-gray-50"
             >
-              <div class="flex items-start justify-between mb-3">
-                <div>
-                  <div class="flex flex-col">
-                    <span class="text-xs text-gray-400 mb-4">{{ review.user?.username ?? 'deleted_user' }}</span>
-                  </div>
-                  <div class="flex gap-0.5">
-                    <span
-                      v-for="i in 5"
-                      :key="i"
-                      class="text-base"
-                      :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-200'"
-                      >
-                      ★
-                    </span>
-                  </div>
-                </div>
-                <div class="flex flex-col">
-                  <button 
-                    v-if="canDeleteReview(review)" 
-                    class="text-red-500 cursor-pointer active:text-red-900 w-fit self-end mb-4"
-                    @click="deleteReview(review.uid)"
-                    >
-                    <i class="pi pi-times-circle"></i>
-                  </button>
-                  <span class="text-xs text-gray-400 h-full text-start">{{ formatDate(review.created_at) }}</span>
-                </div>
-              </div>
-              <div class="flex justify-between">
-                <p class="text-sm text-gray-700 leading-relaxed">{{ review.review_text }}</p>
-                <div class="flex flex-column">
-                  <span class="text-sm mr-3 text-gray-600">{{ review.likes_count }}</span>
-                  <button 
-                      v-if="review.is_liked"
-                      class="text-red-500 cursor-pointer active:text-red-900 w-fit self-end mb-4"
-                      @click="unlikeReview(review.uid)"
-                      >
-                      <i class="pi pi-heart-fill"></i>
-                  </button>
-                  <button 
-                      v-else
-                      class="text-red-500 cursor-pointer active:text-red-900 w-fit self-end mb-4"
-                      @click="likeReview(review.uid)"
-                      >
-                      <i class="pi pi-heart"></i>
-                  </button>
-                </div>
-              </div>
+              <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                {{ detail.label }}
+              </p>
+              <p class="text-sm font-semibold text-gray-800 mt-1">{{ detail.value }}</p>
             </div>
           </div>
         </div>
+        <ReviewList
+          :reviews="book.reviews"
+          @delete="deleteReview"
+          @like="likeReview"
+          @unlike="unlikeReview"
+        >
+          <template #action>
+            <button
+              v-if="!hasReviewed"
+              @click="rateModal?.open()"
+              class="px-4 py-3 bg-emerald-800 text-white text-sm font-medium rounded-md cursor-pointer"
+              >
+              Add Review
+            </button>
+            <p v-else class="text-sm text-gray-400">You already reviewed this book</p>
+          </template>
+        </ReviewList>
       </div>
     </div>
   </div>
@@ -220,8 +153,8 @@ import { reviewService } from '@/services/review_service'
 import CommonModal from '@/components/modals/CommonModal.vue'
 import { tagService } from '@/services/tag_service'
 import { useToastNotifications } from '@/_helper/useToastNotifications'
-import type { Review } from '@/types/review_types'
 import { useAuthStore } from '@/stores/auth_store'
+import ReviewList from '@/components/reviews/ReviewList.vue'
 
 const authStore = useAuthStore();
 const toastNotifications = useToastNotifications();
@@ -252,12 +185,6 @@ const refetchBook = async () => {
   book.value = await bookService.get_book_by_id(route.params.id as string)
 }
 
-const avgRating = computed(() => {
-  if (!book.value?.reviews.length) return 0
-  const sum = book.value.reviews.reduce((acc, r) => acc + r.rating, 0)
-  return Number((sum / book.value.reviews.length).toFixed(1))
-})
-
 const details = computed(() => {
   if (!book.value) return []
   return [
@@ -267,11 +194,6 @@ const details = computed(() => {
     { label: 'Language', value: book.value.language },
   ]
 })
-
-const canDeleteReview = (review: Review): boolean => {
-  if(!authStore.user) return false;
-  return authStore.user.role === 'admin' || review.user_uid === authStore.user.uid
-}
 
 const submitReview = async (rating: number, review_text: string) => {
   if (!book.value) return
@@ -369,12 +291,14 @@ const handleRemoveTagFromBook = async (book_uid: string, tag_uid: string) => {
   }
 }
 
+const hasReviewed = computed(() =>
+  book.value?.reviews.some(r => r.user_uid === authStore.user?.uid) ?? false
+)
+
 watch(tagQuery, (val) => {
   if (tagValue.value && val !== tagValue.value.name) {
     tagValue.value = null
   }
 })
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 </script>

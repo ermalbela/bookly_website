@@ -29,24 +29,10 @@ async def get_all_books(
     
     user_uid = token_details.get("user")["user_uid"]
     
-    statement = await session.exec(select(SavedBooks).where(SavedBooks.user_uid == user_uid))
-    all_saved_books = statement.all()
-    saved_by_user = {str(s.book_uid) for s in all_saved_books if str(s.user_uid) == user_uid}
-    
-    saved_count = defaultdict(int) #defaultdict adds a default key to dicts
-    for s in all_saved_books:
-        saved_count[str(s.book_uid)] += 1
-
-    return [
-        {
-            **book.model_dump(),
-            "is_saved": str(book.uid) in saved_by_user,
-            "saved_count": saved_count[str(book.uid)]
-        } for book in books
-    ]
+    return await book_service.get_books_with_saves(books, user_uid, session)
 
 
-@book_router.get("/user/{user_uid}", response_model=List[Book], dependencies=[role_checker])
+@book_router.get("/user/{user_uid}", response_model=List[BookSavesModel], dependencies=[role_checker])
 async def get_user_book_submissions(
     user_uid: str,
     session: AsyncSession = Depends(get_session),
@@ -54,7 +40,7 @@ async def get_user_book_submissions(
 ):
     books = await book_service.get_user_books(user_uid, session)
     
-    return books
+    return await book_service.get_books_with_saves(books, user_uid, session)
 
 
 @book_router.post(
@@ -80,33 +66,10 @@ async def get_book(
     session: AsyncSession = Depends(get_session),
     token_details: dict = Depends(access_token_bearer),
 ) -> dict:
-    book = await book_service.get_book(book_uid, session)
-
-    if not book:
-        raise BookNotFound()
-
-    current_user_uid = token_details["user"]["user_uid"]
-    review_uids = [uuid.UUID(str(r.uid)) for r in book.reviews]
-
-
-    statement = sa_select(ReviewLike).where(ReviewLike.review_uid.in_(review_uids))
-    result = await session.exec(statement)
-    likes = result.scalars().all()
+    user_uid = token_details.get("user")["user_uid"]
     
-    likes_by_review = defaultdict(list)
-    for like in likes:
-        likes_by_review[str(like.review_uid)].append(str(like.user_uid))
-        
-    reviews = [
-        ReviewDetailModel(
-            **review.model_dump(),
-            user=review.user,
-            likes_count=len(likes_by_review[str(review.uid)]),
-            is_liked=current_user_uid in likes_by_review[str(review.uid)]
-        ) for review in book.reviews
-    ]
+    return await book_service.get_book_review_details(book_uid, user_uid, session)
     
-    return {**book.model_dump(), "reviews": reviews, "tags": book.tags}
 
 @book_router.patch("/{book_uid}", response_model=Book, dependencies=[admin_checker])
 async def update_book(

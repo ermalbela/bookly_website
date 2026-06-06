@@ -54,3 +54,9 @@ export interface AuthUser {
   username: string
   role: string
 }
+
+export interface ProfileResponse {
+  saved_books: Book[]
+  reviews: Review[]
+  liked_reviews: Review[]
+}

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth_store'
 import AuthLayout from '@/layout/AuthLayout.vue'
 import Login from '@/pages/Login.vue'
-import Layout from '@/layout/Layout.vue'
+import Layout from '@/layout/main_layout/Layout.vue'
 import Books from '@/pages/Books.vue'
 import NotFound from '@/pages/NotFound.vue'
 import BookDetail from '@/pages/BookDetail.vue'
@@ -11,6 +11,7 @@ import PasswordResetRequest from '@/pages/password-request-pages/PasswordResetRe
 import PasswordResetSuccessfully from '@/pages/password-request-pages/PasswordResetSuccessfully.vue'
 import Register from '@/pages/Register.vue'
 import Tags from '@/pages/Tags.vue'
+import Profile from '@/pages/Profile.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -51,6 +52,7 @@ const router = createRouter({
       path: '/',
       component: Layout,
       meta: { requiresAuth: true },
+      redirect: {name: 'books'},
       children: [
         {
           path: 'books',
@@ -66,6 +68,11 @@ const router = createRouter({
           path: 'tags',
           name: 'tags',
           component: Tags
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: Profile
         }
       ],
     },

@@ -1,11 +1,20 @@
-from fastapi import APIRouter, Depends, status, BackgroundTasks, File, UploadFile, HTTPException
+from fastapi import (
+    APIRouter,
+    Depends,
+    status,
+    BackgroundTasks,
+    File,
+    UploadFile,
+    HTTPException,
+)
 from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
 import cloudinary
 import cloudinary.uploader
 from .schemas import (
     UserCreateModel,
-    UserModel,
+    UserProfileModel,
     UserLoginModel,
     UserBooksModel,
     EmailModel,
@@ -14,10 +23,10 @@ from .schemas import (
 )
 from .service import UserService
 from src.db.main import get_session
+from src.db.models import SavedBooks, Review, ReviewLike
 from src.db.redis import add_jti_to_blocklist
 from .utils import (
     create_access_token,
-    decode_token,
     verify_password,
     create_url_safe_token,
     decode_url_safe_token,
@@ -37,6 +46,7 @@ from src.errors import (
     PasswordsDontMatch,
     PasswordRequired,
 )
+from src.books.service import BookService
 from datetime import timedelta, datetime
 from src.config import Config
 from src.celery_tasks import send_email
@@ -44,6 +54,7 @@ from src.celery_tasks import send_email
 auth_router = APIRouter()
 user_books_router = APIRouter()
 user_service = UserService()
+book_service = BookService()
 role_checker = RoleChecker(["admin", "user"])
 
 REFRESH_TOKEN_EXPIRY = 7
@@ -54,16 +65,17 @@ async def send_mail(emails: EmailModel):
     emails = emails.addresses
     subject = "Welcome to our app"
     html = "<h1>Welcome to the app</h1>"
-    
 
-    send_email.delay(emails, subject, html) ##Celery Task
+    send_email.delay(emails, subject, html)  ##Celery Task
 
     return JSONResponse(content={"message": "Email sent successfully"})
 
 
 @auth_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def create_user_account(
-    user_data: UserCreateModel, bg_tasks: BackgroundTasks, session: AsyncSession = Depends(get_session)
+    user_data: UserCreateModel,
+    bg_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
 ):
     email = user_data.email
 
@@ -87,7 +99,6 @@ async def create_user_account(
     subject = "Verify your email"
 
     send_email.delay(emails, subject, html)
-
 
     return {
         "user": new_user,
@@ -158,7 +169,13 @@ async def login_users(
                     "message": "Login successful",
                     "access_token": access_token,
                     "refresh_token": refresh_token,
-                    "user": {"username": user.username, "email": user.email, "uid": str(user.uid), "avatar_url": user.avatar_url, "role": user.role}
+                    "user": {
+                        "username": user.username,
+                        "email": user.email,
+                        "uid": str(user.uid),
+                        "avatar_url": user.avatar_url,
+                        "role": user.role,
+                    },
                 }
             )
     raise InvalidCredentials()
@@ -219,9 +236,8 @@ async def password_reset_request(email_data: PasswordResetRequestModel):
 
     emails = [email]
     subject = "Reset your password"
-    
-    send_email.delay(emails, subject, html)
 
+    send_email.delay(emails, subject, html)
 
     return JSONResponse(
         content={
@@ -253,7 +269,9 @@ async def reset_account_password(
             raise UserNotFound()
 
         await user_service.update_user(
-            user, {"password_hash": generate_password_hash(passwords.new_password)}, session
+            user,
+            {"password_hash": generate_password_hash(passwords.new_password)},
+            session,
         )
 
         return JSONResponse(
@@ -272,27 +290,50 @@ async def reset_account_password(
 
 
 @auth_router.post("/upload/avatar")
-async def upload_avatar(token_details: dict = Depends(AccessTokenBearer()), file: UploadFile = File(),  session: AsyncSession = Depends(get_session)):
+async def upload_avatar(
+    token_details: dict = Depends(AccessTokenBearer()),
+    file: UploadFile = File(),
+    session: AsyncSession = Depends(get_session),
+):
     if file.content_type not in ["image/jpeg", "image/png", "image/webp"]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image type")
-    
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image type"
+        )
+
     user_email = token_details["user"]["email"]
-    
+
     contents = await file.read()
     result = cloudinary.uploader.upload(contents, folder="bookly/avatars")
     avatar_url = result["secure_url"]
 
     user = await user_service.update_avatar_url(avatar_url, user_email, session)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return {"avatar_url": avatar_url}
 
 
 @user_books_router.post("/user/{user_uid}/book/{book_uid}")
-async def save_book_by_user(user_uid: str, book_uid: str, session: AsyncSession = Depends(get_session)):
+async def save_book_by_user(
+    user_uid: str, book_uid: str, session: AsyncSession = Depends(get_session)
+):
     await user_service.save_book(user_uid, book_uid, session)
-    
+
+
 @user_books_router.delete("/user/{user_uid}/book/{book_uid}")
-async def unsave_book_by_user(user_uid: str, book_uid: str, session: AsyncSession = Depends(get_session)):
+async def unsave_book_by_user(
+    user_uid: str, book_uid: str, session: AsyncSession = Depends(get_session)
+):
     await user_service.unsave_book(user_uid, book_uid, session)
+
+
+@user_books_router.get("/profile", response_model=UserProfileModel)
+async def get_profile(
+    token_details: dict = Depends(AccessTokenBearer()),
+    session: AsyncSession = Depends(get_session),
+) -> UserProfileModel:
+    user_uid = token_details.get("user")["user_uid"]
+
+    return await user_service.get_user_profile(user_uid, session)

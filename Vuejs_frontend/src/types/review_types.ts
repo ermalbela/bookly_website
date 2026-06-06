@@ -8,6 +8,7 @@ export interface Review {
   updated_at: string
   user: {
     username: string
+    avatar_url: string
   } | null
   likes_count: number
   is_liked: boolean

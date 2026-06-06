@@ -3,7 +3,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.db.main import get_session
 from src.db.models import User
 from src.auth.dependencies import get_current_user
-from .schemas import ReviewCreateModel, ReviewModel
+from .schemas import ReviewCreateModel, ReviewModel, ReviewDetailModel
 from .service import ReviewService
 from typing import List
 from src.auth.dependencies import RoleChecker
@@ -47,7 +47,7 @@ async def get_review_by_uid(
 
 @review_router.get(
     "/get_user_reviews/{user_id}",
-    response_model=List[ReviewModel],
+    response_model=List[ReviewDetailModel],
     dependencies=[role_checker],
 )
 async def get_all_user_reviews(
@@ -88,6 +88,7 @@ async def unlike_review_by_user(
     review_uid: str, user_uid: str, session: AsyncSession = Depends(get_session)
 ):
     await review_service.unlike_review(user_uid, review_uid, session)
+
 
 @user_review_router.get('/{user_uid}')
 async def get_user_likes(user_uid: str, session: AsyncSession = Depends(get_session)):

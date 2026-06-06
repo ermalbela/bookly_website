@@ -9,8 +9,8 @@ export const bookService = {
     return data
   },
 
-  get_books_by_user: async (user_uid: string) => {
-    const { data } = await api.get<Book[]>(`/books/${user_uid}`);
+  get_books_by_user: async (user_uid: string): Promise<Book[]> => {
+    const { data } = await api.get<Book[]>(`/books/user/${user_uid}`);
     console.log(data);
     return data
   },
@@ -22,7 +22,7 @@ export const bookService = {
   },
 
   create_book: async (book_data: BookCreateModel): Promise<Book> => {
-    const { data } = await api.post('/books/', book_data)
+    const { data } = await api.post<Book>('/books/', book_data)
     return data
   },
 
@@ -32,7 +32,7 @@ export const bookService = {
   },
 
   delete_book: async (book_uid: string): Promise<void> => {
-    await api.delete(`/books/${book_uid}`)
+    await api.delete<void>(`/books/${book_uid}`)
   },
 
 }
