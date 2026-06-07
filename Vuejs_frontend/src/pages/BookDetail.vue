@@ -27,6 +27,7 @@
             </h2>
           </div>
           <button
+            v-if="authStore.user?.role === 'admin'"
             @click="tagIsOpen = true"
             class="px-4 py-3 bg-emerald-800 text-white text-sm font-medium rounded-md cursor-pointer active:bg-emerald-900"
           >

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import List
 from src.books.schemas import Book, BookSavesModel
 from src.reviews.schemas import ReviewModel, ReviewDetailModel
-
+from typing import Optional
 
 class UserCreateModel(BaseModel):
     username: str = Field(max_length=12)
@@ -33,16 +33,34 @@ class UserBooksModel(UserModel):
     reviews: List[ReviewModel]
 
 
+class ProfileUserModel(BaseModel):
+    username: str
+    first_name: str
+    last_name: str
+    avatar_url: Optional[str] = None
+    
+
 class UserProfileModel(BaseModel):
     saved_books: List[BookSavesModel]
     reviews: List[ReviewDetailModel]
     liked_reviews: List[ReviewDetailModel]
-    
+    followers_count: int
+    following_count: int
+    is_following: bool = False
+    user: Optional[ProfileUserModel] = None
 
 class UserLoginModel(BaseModel):
     email: str = Field(max_length=40)
     password: str = Field(min_length=6)
 
+    
+class UserSearchModel(BaseModel):
+    uid: uuid.UUID
+    username: str
+    first_name: str
+    last_name: str
+    avatar_url: Optional[str] = None
+    
 
 class EmailModel(BaseModel):
     addresses: List[str]

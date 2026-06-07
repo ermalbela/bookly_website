@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/auth_store';
 import api from './api';
-import type { AuthResponse, AuthUser, ProfileResponse, User } from '@/types/user_types';
+import type { AuthResponse, AuthUser, ProfileResponse, User, UserSearch } from '@/types/user_types';
 
 
 export const authService = {
@@ -60,8 +60,27 @@ export const authService = {
   },
 
   get_profile: async (): Promise<ProfileResponse> => {
-    const {data} = await api.get<ProfileResponse>('/user_book/profile')
+    const {data} = await api.get<ProfileResponse>('/auth/profile')
     console.log(data);
     return data;
-  }
+  },
+
+  get_user_profile: async (user_uid: string): Promise<ProfileResponse> => {
+    const {data} = await api.get<ProfileResponse>(`/auth/${user_uid}/profile`);
+    console.log(data);
+    return data
+  },
+
+  follow_user: async (user_uid: string): Promise<void> => {
+    await api.post(`/auth/${user_uid}/follow`)
+  },
+
+  unfollow_user: async (user_uid: string): Promise<void> => {
+    await api.delete(`/auth/${user_uid}/unfollow`)
+  },
+
+  search_users: async (query: string): Promise<UserSearch[]> => {
+    const { data } = await api.get<UserSearch[]>(`/auth/search?q=${query}`)
+    return data
+  },
 }

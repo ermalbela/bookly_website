@@ -49,6 +49,22 @@ class SavedBooks(SQLModel, table=True):
             pg.UUID, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, nullable=False
         )
     )
+    
+class UserFollow(SQLModel, table=True):
+    __tablename__ = "user_follows"
+
+    follower_uid: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, nullable=False
+        )
+    )
+    following_uid: uuid.UUID = Field(
+        sa_column=Column(
+            pg.UUID, ForeignKey("users.uid", ondelete="CASCADE"), primary_key=True, nullable=False
+        )
+    )
+    created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
+
 
 
 class Tag(SQLModel, table=True):
@@ -109,6 +125,24 @@ class User(SQLModel, table=True):
         back_populates="saved_by",
         link_model=SavedBooks,
         sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    following: List["User"] = Relationship(
+        back_populates="followers",
+        link_model=UserFollow,
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "primaryjoin": "User.uid == UserFollow.follower_uid",
+            "secondaryjoin": "User.uid == UserFollow.following_uid",
+        }
+    )
+    followers: List["User"] = Relationship(
+        back_populates="following",
+        link_model=UserFollow,
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "primaryjoin": "User.uid == UserFollow.following_uid",
+            "secondaryjoin": "User.uid == UserFollow.follower_uid",
+        }
     )
 
     def __repr__(self):

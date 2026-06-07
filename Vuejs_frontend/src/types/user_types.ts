@@ -59,4 +59,21 @@ export interface ProfileResponse {
   saved_books: Book[]
   reviews: Review[]
   liked_reviews: Review[]
+  followers_count: number
+  following_count: number
+  is_following: boolean,
+  user: {
+    username: string,
+    avatar_url: string,
+    first_name: string,
+    last_name: string
+  }
+}
+
+export interface UserSearch {
+  uid: string
+  username: string
+  first_name: string
+  last_name: string
+  avatar_url: string | null
 }

@@ -20,6 +20,7 @@ from .schemas import (
     EmailModel,
     PasswordResetRequestModel,
     PasswordResetConfirmModel,
+    UserSearchModel
 )
 from .service import UserService
 from src.db.main import get_session
@@ -141,8 +142,10 @@ async def login_users(
     email = login_data.email
     password = login_data.password
 
-    user = await user_service.get_user_by_email(email, session)
 
+    user = await user_service.get_user_by_email(email, session)
+    
+    
     if user is not None:
         password_valid = verify_password(password, user.password_hash)
 
@@ -329,11 +332,43 @@ async def unsave_book_by_user(
     await user_service.unsave_book(user_uid, book_uid, session)
 
 
-@user_books_router.get("/profile", response_model=UserProfileModel)
-async def get_profile(
+@auth_router.get("/profile", response_model=UserProfileModel)
+async def get_self_profile(
     token_details: dict = Depends(AccessTokenBearer()),
     session: AsyncSession = Depends(get_session),
 ) -> UserProfileModel:
     user_uid = token_details.get("user")["user_uid"]
 
-    return await user_service.get_user_profile(user_uid, session)
+    return await user_service.get_user_profile(user_uid, user_uid, session)
+
+
+@auth_router.get('/{user_uid}/profile')
+async def get_user_profile(user_uid: str, token_details: dict = Depends(AccessTokenBearer()), session: AsyncSession = Depends(get_session)):
+    current_user_uid = token_details.get("user")["user_uid"]
+    
+    profile = await user_service.get_user_profile(user_uid, current_user_uid, session)
+    
+    if not profile:
+        raise UserNotFound()
+    return profile
+
+
+@auth_router.post("/{user_uid}/follow", status_code=status.HTTP_204_NO_CONTENT)
+async def follow_user(user_uid: str, token_details: dict = Depends(AccessTokenBearer()), session: AsyncSession = Depends(get_session)):
+    follower_uid = token_details.get("user")["user_uid"]
+    
+    await user_service.follow_user(follower_uid, user_uid, session)
+    
+
+@auth_router.delete("/{user_uid}/unfollow", status_code=status.HTTP_204_NO_CONTENT)
+async def unfollow_user(user_uid: str, token_details: dict = Depends(AccessTokenBearer()), session: AsyncSession = Depends(get_session)):
+    follower_uid = token_details.get("user")["user_uid"]
+    
+    await user_service.unfollow_user(follower_uid, user_uid, session)
+    
+    
+@auth_router.get("/search", response_model=list[UserSearchModel])
+async def search_users(q: str, token_details: dict = Depends(AccessTokenBearer()), session: AsyncSession = Depends(get_session)):
+    users = await user_service.search_users(q, session)
+    return users
+    
