@@ -77,7 +77,8 @@ class ReviewService:
 
         if review_to_delete is None:
             return None
-
+        
+        print("TOKEN DETAILS???????????????//" , token_details)
         user_role = token_details["user"]["role"]
         user_uid = token_details["user"]["user_uid"]
 

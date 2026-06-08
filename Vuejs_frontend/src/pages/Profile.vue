@@ -47,13 +47,6 @@
             >
               {{ profile.is_following ? 'Unfollow' : 'Follow' }}
             </button>
-
-            <button
-              v-if="isOwnProfile"
-              class="px-5 py-2 text-sm font-medium rounded-md cursor-pointer bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              Edit Profile
-            </button>
           </div>
 
           <h2 class="text-2xl font-semibold text-gray-900">Saved Books</h2>
@@ -74,7 +67,7 @@
           </div>
           <ReviewList
             :reviews="profile.reviews"
-            @delete="isOwnProfile ? deleteReview : undefined"
+            @delete="deleteReview"
             @like="likeReview"
             @unlike="unlikeReview"
           >
@@ -85,7 +78,7 @@
             :reviews="profile.liked_reviews"
             @unlike="unlikeReview"
             @like="likeReview"
-            @delete="isOwnProfile ? deleteReview : undefined"
+            @delete="deleteReview"
           >
             <template #header>Liked Reviews</template>
           </ReviewList>
@@ -193,6 +186,7 @@ const unlikeReview = async (review_uid: string) => {
     )
   }
 }
+
 
 const deleteReview = async (review_uid: string) => {
   if (!review_uid) return

@@ -35,6 +35,7 @@ import { useAuthStore } from '@/stores/auth_store'
 
 defineProps<{
   reviews: Review[]
+  canDelete?: boolean
 }>()
 
 const emit = defineEmits<{

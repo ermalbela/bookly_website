@@ -44,7 +44,8 @@
               <h2 class="text-lg font-semibold text-gray-900transition">
                 {{ tag.name }}
               </h2>
-              <button
+              <button 
+                v-if="authStore.user?.role === 'admin'"
                 class="ml-2 text-red-500 cursor-pointer active:text-red-900"
                 @click="deleteTag(tag.uid)"
               >

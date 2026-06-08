@@ -14,7 +14,8 @@ export const reviewService = {
   },
 
   delete_review: async (review_uid: string): Promise<void> => {
-    await api.delete<void>('/review/' + review_uid)
+    const {data} = await api.delete<void>('/review/' + review_uid);
+    console.log(data)
   },
 
   like_review: async (review_uid: string, user_uid: string): Promise<void> => {

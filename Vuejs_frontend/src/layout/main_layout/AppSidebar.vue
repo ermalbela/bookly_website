@@ -38,11 +38,11 @@
             <i class="pi pi-spin pi-spinner text-white" style="font-size: 1.4rem"></i>
           </div>
         </div>
-        <h3 class="text-center text-sm mt-10 font-medium text-gray-900">
+        <h3 class="text-center text-sm mt-8 font-medium text-gray-900">
           {{ authStore.user?.username }}
         </h3>
         <h4 :class="{
-          'text-center text-sm font-medium mt-1': true,
+          'text-center text-sm font-bold mt-1': true,
           'text-red-500': authStore.user?.role === 'admin',
           'text-green-600': authStore.user?.role === 'user'
         }">
@@ -51,7 +51,7 @@
       </template>
     </div>
 
-    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+    <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
       <RouterLink
         v-for="item in sidebar_items"
         :key="item.name"
@@ -66,7 +66,7 @@
       </RouterLink>
     </nav>
 
-    <div class="p-4 border-t border-gray-300 text-sm text-gray-800">2026 Bookly</div>
+    <div class="p-2 border-t border-gray-300 text-sm text-gray-800">2026 Bookly</div>
   </aside>
 </template>
 

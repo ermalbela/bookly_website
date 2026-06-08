@@ -20,7 +20,7 @@
       <li
         v-for="user in results"
         :key="user.uid"
-        @click="goToProfile(user.uid)"
+        @mousedown="goToProfile(user.uid)"
         class="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors"
       >
         <img
